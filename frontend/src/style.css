@@ -74,7 +74,7 @@ a {
 .hero-copy {
   max-width: 610px;
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 .hero .eyebrow {
   color: #a8c5ff;
