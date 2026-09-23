@@ -1,5 +1,6 @@
 import './style.css'
 
+const API_URL = 'https://three-bananas-production.up.railway.app'
 const ball = `<svg class="ball" viewBox="0 0 160 160" aria-hidden="true"><circle cx="80" cy="80" r="61" fill="#fff" stroke="#101828" stroke-width="5"/><path d="M80 47 98 60 91 82H69l-7-22zM69 82 52 95M91 82l17 13M62 60 43 58M98 60l19-2M52 95l7 22M108 95l-7 22" fill="none" stroke="#101828" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 const products = [
   { id: 'basic', level: 'Базовые навыки', description: 'Первый шаг к уверенной игре и хорошему настроению.', price: 100 },
@@ -53,4 +54,37 @@ stickyAction.addEventListener('click', () => {
     emailInput.focus({ preventScroll: true })
   }
 })
-orderForm.addEventListener('submit', (event) => { event.preventDefault(); const message = document.querySelector<HTMLElement>('#message')!; message.textContent = checks.some((check) => check.checked) ? 'Форма готова. Подключим Robokassa следующим шагом.' : 'Выберите хотя бы один материал.' })
+orderForm.addEventListener('submit', async (event) => {
+  event.preventDefault()
+  const message = document.querySelector<HTMLElement>('#message')!
+  const selected = checks.filter((check) => check.checked)
+
+  if (!selected.length) {
+    message.textContent = 'Выберите хотя бы один материал.'
+    return
+  }
+
+  const submitButtons = Array.from(orderForm.querySelectorAll<HTMLButtonElement>('button'))
+  submitButtons.forEach((button) => { button.disabled = true })
+  stickyAction.disabled = true
+  message.textContent = 'Сохраняем заказ...'
+
+  try {
+    const response = await fetch(`${API_URL}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailInput.value.trim(),
+        items: selected.map((check) => check.value),
+      }),
+    })
+
+    if (!response.ok) throw new Error('Не удалось создать заказ')
+    const order = await response.json() as { id: number; amount: number }
+    message.textContent = `Заказ №${order.id} принят на сумму ${order.amount} ₽. Оплату подключим следующим шагом.`
+  } catch {
+    message.textContent = 'Не удалось сохранить заказ. Попробуйте ещё раз.'
+    submitButtons.forEach((button) => { button.disabled = false })
+    stickyAction.disabled = false
+  }
+})
