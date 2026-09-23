@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Order {
+  id                 Int         @id @default(autoincrement())
+  email              String
+  amount             Int
+  status             OrderStatus @default(PENDING)
+  robokassaInvoiceId String?     @unique
+  createdAt           DateTime    @default(now())
+  paidAt              DateTime?
+  items              OrderItem[]
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId  Int
+  productId String
+  name      String
+  price     Int
+  quantity  Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
